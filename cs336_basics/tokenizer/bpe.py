@@ -125,7 +125,7 @@ class BPETokenizer:
             desired_num_chunks=1000,
         )
         token_counter = Counter()
-
+        import pdb; pdb.set_trace()
         # parallel processing
         partial_func = partial(self._process_single_chunk, special_tokens=special_tokens)
         num_processes = min(multiprocessing.cpu_count(), len(chunks))
@@ -229,8 +229,8 @@ class BPETokenizer:
 if __name__ == "__main__":
     tokenizer = BPETokenizer()
     tokenizer.train_bpe(
-        input_path="/data/TinyStoriesV2-GPT4-train.txt",
-        vocab_size=1000,
+        input_path="/data/owt_train.txt",
+        vocab_size=32000,
         special_tokens=["<|endoftext|>"],
     )
-    tokenizer.save("/data/tokenizer_TinyStories")
+    tokenizer.save("/data/tokenizer_owt_32k")
