@@ -10,6 +10,7 @@ from jaxtyping import Bool, Float, Int
 from torch import Tensor
 
 from cs336_basics.tokenizer.bpe import BPETokenizer
+# from cs336_basics.tokenizer.bpe_optim import BPETokenizer
 from cs336_basics.tokenizer.tokenizer import Tokenizer
 
 
