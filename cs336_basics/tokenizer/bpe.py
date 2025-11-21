@@ -1,7 +1,6 @@
 from typing import Optional
 import regex as re
 import multiprocessing
-import json
 from tqdm import tqdm
 from collections import Counter, defaultdict
 from functools import partial
@@ -17,8 +16,9 @@ class BPETokenizer:
     ):
         self.vocab = vocab
         self.merges = merges
+        self.special_tokens = special_tokens
 
-    def _pretokenize(self, text) -> Counter[tuple[bytes]]:
+    def pretokenize(self, text) -> Counter[tuple[bytes]]:
         GPT2_PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
         token_counter = Counter()
         
@@ -45,46 +45,63 @@ class BPETokenizer:
         merged_pair: tuple[bytes, bytes],
         tokens: list[list[bytes]],
         token_counts: list[int],
-        pair_counter: Counter[tuple[bytes]],
-        pair_position_table: dict[tuple[bytes], set[int]]
-    ) -> Optional[tuple[bytes]]:
+        pair_counter: Counter,
+        pair_position_table: dict[tuple[bytes, bytes], set[int]]
+    ):
         A, B = merged_pair
-        merged_pair_bytes = A + B
+        merged_token = A + B
 
-        affected_token_ids = list(pair_position_table[merged_pair])
+        affected_tokens = pair_position_table.get(merged_pair)
+        if not affected_tokens:
+            return None
 
-        for token_idx in affected_token_ids:
-            old_token = tokens[token_idx]
+        pc = pair_counter
+        ppt = pair_position_table
+
+        for tid in affected_tokens:
+            old_token = tokens[tid]
+            count = token_counts[tid]
+
+            # remove old_token pairs from pair_counter
+            L = len(old_token)
+            for i in range(L - 1):
+                pair = (old_token[i], old_token[i+1])
+                pc[pair] -= count
+
+            # construct new_token
             new_token = []
             i = 0
-            while i < len(old_token):
-                if i + 1 < len(old_token) and (old_token[i], old_token[i + 1]) == merged_pair:
-                    new_token.append(merged_pair_bytes)
+            while i < L:
+                if i + 1 < L and old_token[i] == A and old_token[i+1] == B:
+                    new_token.append(merged_token)
                     i += 2
                 else:
                     new_token.append(old_token[i])
                     i += 1
-            tokens[token_idx] = new_token
-        
-        for pair in list(pair_position_table.keys()): # use list to save a copy of dict
-            # filter out the pairs that are not affected by the merge
-            pair_position_table[pair].difference_update(affected_token_ids)
-        
-        # recompute the pair count&position of affected tokens
-        for token_idx in affected_token_ids:
-            token = tokens[token_idx]
-            token_count = token_counts[token_idx]
-            for i in range(len(token) - 1):
-                pair = (token[i], token[i + 1])
-                pair_counter[pair] += token_count
-                pair_position_table[pair].add(token_idx)
 
+            tokens[tid] = new_token
+
+        # remove merged_pair
+        del pc[merged_pair]
+        del ppt[merged_pair]
+
+        # recompute new_token pair counts&positions
+        for tid in affected_tokens:
+            new_token = tokens[tid]
+            count = token_counts[tid]
+            L = len(new_token)
+            for i in range(L - 1):
+                pair = (new_token[i], new_token[i+1])
+                pc[pair] += count
+                ppt[pair].add(tid)
+
+        return merged_token
 
     def _process_single_chunk(self, chunk: str, special_tokens: list[str]) -> Counter[tuple[bytes]]:
         documents = self._remove_special_tokens(chunk, special_tokens)
         token_counter = Counter()
         for document in documents:
-            doc_token_counter = self._pretokenize(document)
+            doc_token_counter = self.pretokenize(document)
             token_counter.update(doc_token_counter)
 
         return token_counter
@@ -147,7 +164,8 @@ class BPETokenizer:
                 if not pair_counter:
                     print("No more pairs to merge!")
                     break
-                merged_pair = self._find_lex_greatest_pair(pair_counter)
+
+                merged_pair = self._find_lex_greatest_pair(pair_counter) # (b's', b'o')
                 self.merges.append(merged_pair)
                 self.vocab[offset + i] = merged_pair[0] + merged_pair[1]
 
@@ -161,46 +179,58 @@ class BPETokenizer:
         return self.vocab, self.merges
 
     def save(self, folder: str):
-        import os
-        os.makedirs(li, exist_ok=True)
+        """
+        Save merges and vocab as GPT-2 format
+        """
+        import os, json
 
-        # save vocab
-        vocab_dict = {str(i): v.hex() for i, v in self.vocab.items()}
-        with open(f"{folder}/vocab.json", "w") as f:
+        os.makedirs(folder, exist_ok=True)
+
+        # 1. Project bytes -> unicode（latin-1 + extension）to ensure the safe json format
+        def bytes_to_unicode():
+            bs = (
+                list(range(33, 127))  # visible ASCII
+                + list(range(161, 256))
+            )
+            cs = bs[:]
+            n = 0
+            for b in range(256):
+                if b not in bs:
+                    bs.append(b)
+                    cs.append(256 + n)
+                    n += 1
+            return dict(zip(bs, [chr(c) for c in cs]))
+
+        byte_encoder = bytes_to_unicode()
+
+        def encode_bytes_for_gpt2(bs: bytes) -> str:
+            return "".join(byte_encoder[b] for b in bs)
+
+        # 2. save vocab.json
+        vocab_dict = {}
+        for tok_id, tok_bytes in self.vocab.items():
+            token_str = encode_bytes_for_gpt2(tok_bytes)
+            vocab_dict[token_str] = tok_id
+
+        with open(f"{folder}/vocab.json", "w", encoding="utf-8") as f:
             json.dump(vocab_dict, f, ensure_ascii=False, indent=2)
 
-        # save merges
-        with open(f"{folder}/merges.txt", "w") as f:
+        # 3. save merges.txt
+        with open(f"{folder}/merges.txt", "w", encoding="utf-8") as f:
             for a, b in self.merges:
-                f.write(f"{a.hex()} {b.hex()}\n")
+                sa = encode_bytes_for_gpt2(a)
+                sb = encode_bytes_for_gpt2(b)
+                f.write(f"{sa} {sb}\n")
 
-        print(f"Tokenizer saved to {folder}")
+        print(f"GPT-2 style tokenizer saved to {folder}")
 
-    @classmethod
-    def load(cls, folder: str):
-        tokenizer = cls()
 
-        # load vocab
-        with open(f"{folder}/vocab.json") as f:
-            vocab_json = json.load(f)
-            tokenizer.vocab = {int(k): bytes.fromhex(v) for k, v in vocab_json.items()}
-
-        # load merges
-        merges = []
-        with open(f"{folder}/merges.txt") as f:
-            for line in f:
-                a_hex, b_hex = line.strip().split()
-                merges.append((bytes.fromhex(a_hex), bytes.fromhex(b_hex)))
-        tokenizer.merges = merges
-        
-        print(f"Tokenizer loaded from {folder}")
-        return tokenizer
 
 if __name__ == "__main__":
     tokenizer = BPETokenizer()
     tokenizer.train_bpe(
-        input_path="/data/owt_train.txt",
-        vocab_size=32000,
+        input_path="/data/TinyStoriesV2-GPT4-train.txt",
+        vocab_size=1000,
         special_tokens=["<|endoftext|>"],
     )
-    tokenizer.save("/data/my_bpe_tokenizer_owt")
+    tokenizer.save("/data/tokenizer_TinyStories")
