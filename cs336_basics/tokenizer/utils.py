@@ -62,3 +62,48 @@ def get_chunks(
             chunks.append(chunk)
     
     return chunks
+
+
+def stream_chunks_with_split(
+    input_path: str,
+    split_token: bytes = b"<|endoftext|>",
+    block_size: int = 128 * 1024 * 1024,
+):
+    """
+    Streamlized large file reading.
+    - Pretokenize with the granuality of block_size
+    - Total iter num: file_size // block_size
+    """
+    token_len = len(split_token)
+    tail_buf = b"" # To cover the case of split token being splitted between blocks.
+
+    with open(input_path, "rb") as f:
+        while True:
+            block = f.read(block_size)
+            if not block:
+                if tail_buf:
+                    yield tail_buf
+                break
+
+            data = tail_buf + block
+
+            cleaned = []
+            start = 0
+
+            while True:
+                idx = data.find(split_token, start)
+                if idx == -1:
+                    break
+                if idx > start:
+                    cleaned.append(data[start:idx])
+                start = idx + token_len
+
+            remain = data[start:]
+
+            if len(remain) >= token_len - 1:
+                cleaned.append(remain[:-(token_len - 1)])
+                tail_buf = remain[-(token_len - 1):]
+            else:
+                tail_buf = remain
+
+            yield b"".join(cleaned)

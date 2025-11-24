@@ -1,48 +1,10 @@
-from typing import Optional
 import regex as re
 import multiprocessing
 from tqdm import tqdm
 from collections import Counter, defaultdict
 from functools import partial
-import os
 
-################################################################################
-#                           Streaming File Reader
-################################################################################
-
-def stream_chunks(
-    input_path: str,
-    split_token: bytes = b"<|endoftext|>",
-    block_size: int = 64 * 1024 * 1024,  # 64MB
-):
-    """
-    流式读取文件，并在 split_token 边界拆分 chunk
-    不会一次性把所有 chunk 保存到内存
-    """
-    buf = b""
-    with open(input_path, "rb") as f:
-        while True:
-            block = f.read(block_size)
-            if not block:
-                # yield 最后剩下的内容
-                if buf:
-                    yield buf
-                break
-
-            buf += block
-
-            # 根据 <|endoftext|> 分割
-            while True:
-                pos = buf.find(split_token)
-                if pos == -1:
-                    break
-                yield buf[:pos]  # 一个完整 chunk
-                buf = buf[pos + len(split_token):]
-
-
-################################################################################
-#                               BPE Tokenizer
-################################################################################
+from cs336_basics.tokenizer.utils import stream_chunks_with_split
 
 class BPETokenizer:
     def __init__(self, vocab=None, merges=None, special_tokens=None):
@@ -50,9 +12,6 @@ class BPETokenizer:
         self.merges = merges or []
         self.special_tokens = special_tokens or []
 
-    ############################################################################
-    #                          Memory-efficient Pretokenize
-    ############################################################################
     def pretokenize(self, text: str) -> Counter[bytes]:
         """
         返回 Counter[token_bytes]。大幅减少内存使用。
@@ -68,22 +27,12 @@ class BPETokenizer:
 
         return token_counter
 
-    ############################################################################
-    #                     Worker: process one raw bytes chunk
-    ############################################################################
     def _process_single_chunk(self, chunk: bytes, special_tokens: list[str]) -> Counter[bytes]:
-        """
-        由于 chunk 是 bytes，这里只在必要时 decode (stream-friendly)
-        """
         text = chunk.decode("utf-8", errors="ignore")
-        # 去掉 special token
         for tok in special_tokens:
             text = text.replace(tok, "")
         return self.pretokenize(text)
 
-    ############################################################################
-    #                           BPE Training
-    ############################################################################
     def train_bpe(self, input_path: str, vocab_size: int, special_tokens: list[str]):
         self.vocab = {}
         self.merges = []
@@ -109,7 +58,7 @@ class BPETokenizer:
         # streaming chunks
         with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
             for chunk_counter in tqdm(
-                pool.imap(partial_func, stream_chunks(input_path)),
+                pool.imap(partial_func, stream_chunks_with_split(input_path)),
                 desc="Pretokenizing"
             ):
                 token_counter.update(chunk_counter)
@@ -124,9 +73,8 @@ class BPETokenizer:
             tokens.append([bytes([b]) for b in token_bytes])  # list[bytes]
             token_counts.append(count)
 
-        del token_counter  # free memory ASAP
+        del token_counter
 
-        # ---------------- Step 3: build initial pair stats ----------------
         pair_counter = Counter()
         pair_position_table = defaultdict(set)
 
@@ -192,6 +140,53 @@ class BPETokenizer:
                     pair_position_table[p].add(tid)
 
         return self.vocab, self.merges
+
+    def save(self, folder: str):
+        """
+        Save merges and vocab as GPT-2 format
+        """
+        import os, json
+
+        os.makedirs(folder, exist_ok=True)
+
+        # 1. Project bytes -> unicode（latin-1 + extension）to ensure the safe json format
+        def bytes_to_unicode():
+            bs = (
+                list(range(33, 127))  # visible ASCII
+                + list(range(161, 256))
+            )
+            cs = bs[:]
+            n = 0
+            for b in range(256):
+                if b not in bs:
+                    bs.append(b)
+                    cs.append(256 + n)
+                    n += 1
+            return dict(zip(bs, [chr(c) for c in cs]))
+
+        byte_encoder = bytes_to_unicode()
+
+        def encode_bytes_for_gpt2(bs: bytes) -> str:
+            return "".join(byte_encoder[b] for b in bs)
+
+        # 2. save vocab.json
+        vocab_dict = {}
+        for tok_id, tok_bytes in self.vocab.items():
+            token_str = encode_bytes_for_gpt2(tok_bytes)
+            vocab_dict[token_str] = tok_id
+
+        with open(f"{folder}/vocab.json", "w", encoding="utf-8") as f:
+            json.dump(vocab_dict, f, ensure_ascii=False, indent=2)
+
+        # 3. save merges.txt
+        with open(f"{folder}/merges.txt", "w", encoding="utf-8") as f:
+            for a, b in self.merges:
+                sa = encode_bytes_for_gpt2(a)
+                sb = encode_bytes_for_gpt2(b)
+                f.write(f"{sa} {sb}\n")
+
+        print(f"GPT-2 style tokenizer saved to {folder}")
+
 
 if __name__ == "__main__":
     tokenizer = BPETokenizer()

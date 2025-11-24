@@ -5,7 +5,7 @@ from tqdm import tqdm
 from collections import Counter, defaultdict
 from functools import partial
 
-from cs336_basics.pretokenization_example import get_chunks
+from cs336_basics.tokenizer.utils import get_chunks
 
 class BPETokenizer:
     def __init__(
