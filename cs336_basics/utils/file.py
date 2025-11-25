@@ -68,7 +68,8 @@ def stream_chunks_with_split(
     input_path: str,
     split_token: bytes = b"<|endoftext|>",
     block_size: int = 128 * 1024 * 1024,
-):
+    reserve_split_token: bool = False,
+) -> bytes:
     """
     Streamlized large file reading.
     - Pretokenize with the granuality of block_size
@@ -96,10 +97,12 @@ def stream_chunks_with_split(
                     break
                 if idx > start:
                     cleaned.append(data[start:idx])
+
+                if reserve_split_token:
+                    cleaned.append(split_token)
                 start = idx + token_len
 
             remain = data[start:]
-
             if len(remain) >= token_len - 1:
                 cleaned.append(remain[:-(token_len - 1)])
                 tail_buf = remain[-(token_len - 1):]

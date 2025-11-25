@@ -1,10 +1,11 @@
-import regex as re
-import multiprocessing
-from tqdm import tqdm
 from collections import Counter, defaultdict
 from functools import partial
+import multiprocessing
 
-from cs336_basics.tokenizer.utils import stream_chunks_with_split
+import regex as re
+from tqdm import tqdm
+
+from cs336_basics.utils.file import stream_chunks_with_split
 
 class BPETokenizer:
     def __init__(self, vocab=None, merges=None, special_tokens=None):

@@ -5,7 +5,7 @@ from tqdm import tqdm
 from collections import Counter, defaultdict
 from functools import partial
 
-from cs336_basics.tokenizer.utils import get_chunks
+from cs336_basics.utils.file import get_chunks
 
 class BPETokenizer:
     def __init__(
@@ -125,7 +125,7 @@ class BPETokenizer:
             desired_num_chunks=1000,
         )
         token_counter = Counter()
-        import pdb; pdb.set_trace()
+
         # parallel processing
         partial_func = partial(self._process_single_chunk, special_tokens=special_tokens)
         num_processes = min(multiprocessing.cpu_count(), len(chunks))

@@ -1,4 +1,5 @@
 from typing import Iterable, Iterator
+
 import regex as re
 
 
