@@ -1,6 +1,5 @@
 from typing import Iterable, Iterator
-import re
-import regex
+import regex as re
 
 
 class Tokenizer:
@@ -10,6 +9,7 @@ class Tokenizer:
         self.special_tokens = special_tokens or []
         
         self._split_pattern = None
+        self._gpt2_pattern = re.compile(rb"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""")
 
         # Build a lookup from byte sequence to token id
         self.byte_to_id = {v: k for k, v in self.vocab.items()}
@@ -31,8 +31,9 @@ class Tokenizer:
         # Pre-compile regex patterns
         if self.special_tokens:
             sorted_specials = sorted(self.special_tokens, key=len, reverse=True)
-            pattern_str = "|".join(re.escape(tok) for tok in sorted_specials)
-            self._split_pattern = re.compile(f"({pattern_str})")
+            pattern_str = "(" + "|".join(re.escape(tok) for tok in sorted_specials) + ")"
+            pattern_str = pattern_str.encode("utf-8")
+            self._split_pattern = re.compile(pattern_str)
 
     @classmethod
     def from_files(cls, vocab_filepath: str, merges_filepath: str, special_tokens: list[str] | None = None) -> "BPETokenizer":
@@ -95,15 +96,24 @@ class Tokenizer:
     def _byte_pair_merge(self, token: bytes) -> list[bytes]:
         # Convert bytes to tuple of single-byte elements
         word = [bytes([b]) for b in token]
-        pairs = lambda w: set((w[i], w[i + 1]) for i in range(len(w) - 1))
 
         while True:
-            candidate_pairs = pairs(word)
-            ranked_pairs = [(self.merge_ranks[p], p) for p in candidate_pairs if p in self.merge_ranks]
-            if not ranked_pairs:
+            candidate_pairs = set()
+            for i in range(len(word) - 1):
+                candidate_pairs.add((word[i], word[i + 1]))
+            
+            # find best_pair
+            best_pair = None
+            best_rank = float('inf')
+            for pair in candidate_pairs:
+                if pair in self.merge_ranks:
+                    rank = self.merge_ranks[pair]
+                    if rank < best_rank:
+                        best_rank = rank
+                        best_pair = pair
+            if best_pair is None:
                 break
 
-            _, best_pair = min(ranked_pairs)
             new_word = []
             i = 0
             while i < len(word):
@@ -117,20 +127,19 @@ class Tokenizer:
         return word
 
     def encode(self, text: str) -> list[int]:
-        PAT = r"'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"
         result = []
-        segments = re.split(self._split_pattern, text) if self._split_pattern else [text]
+        text_bytes = text.encode("utf-8")
+        segments = self._split_pattern.split(text_bytes) if self._split_pattern else [text_bytes]
 
         for segment in segments:
             if not segment:
                 continue
-            b = segment.encode("utf-8")
-            if b in self.special_tokens_set:
-                result.append(self.byte_to_id[b])
+            if segment in self.special_tokens_set:
+                result.append(self.byte_to_id[segment])
             else:
-                for match in regex.finditer(PAT, segment):
+                for match in self._gpt2_pattern.finditer(segment):
                     token = match.group()
-                    for merged in self._byte_pair_merge(token.encode("utf-8")):
+                    for merged in self._byte_pair_merge(token):
                         result.append(self.byte_to_id[merged])
         return result
 
@@ -144,8 +153,8 @@ class Tokenizer:
 
 
 if __name__ == "__main__":
-    text = "hello ! ！，4#"
-    tokenizer = Tokenizer.from_files('/data/tokenizer_TinyStories_10k/vocab.json', '/data/tokenizer_TinyStories_10k/merges.txt', ["<|endoftext|>"])
+    text = "hello ! ！，4#. afdg<|endoftext|> rgeb! aretfasdf"
+    tokenizer = Tokenizer.from_files('/data/tokenizer_owt_32k_optim/vocab.json', '/data/tokenizer_owt_32k_optim/merges.txt', ["<|endoftext|>"])
     encoded_text = tokenizer.encode(text)
     print(encoded_text)
     for token_id in encoded_text:
