@@ -12,7 +12,9 @@ from torch import Tensor
 from cs336_basics.tokenizer.bpe import BPETokenizer
 # from cs336_basics.tokenizer.bpe_optim import BPETokenizer
 from cs336_basics.tokenizer.tokenizer import Tokenizer
+from cs336_basics.transformer.nn import Linear, Embedding
 
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def run_linear(
     d_in: int,
@@ -32,9 +34,12 @@ def run_linear(
     Returns:
         Float[Tensor, "... d_out"]: The transformed output of your linear module.
     """
+    weights = weights.to(DEVICE)
+    linear_layer = Linear(d_in, d_out, device=weights.device, dtype=weights.dtype)
+    state = {"weight": weights}
+    linear_layer.load_state_dict(state)
 
-    raise NotImplementedError
-
+    return linear_layer(in_features.to(DEVICE))
 
 def run_embedding(
     vocab_size: int,
@@ -54,8 +59,12 @@ def run_embedding(
     Returns:
         Float[Tensor, "... d_model"]: Batch of embeddings returned by your Embedding layer.
     """
+    weights = weights.to(DEVICE)
+    emb_layer = Embedding(vocab_size, d_model, device=weights.device, dtype=weights.dtype)
+    state = {"weight": weights}
+    emb_layer.load_state_dict(state)
 
-    raise NotImplementedError
+    return emb_layer(token_ids.to(DEVICE))
 
 
 def run_swiglu(
