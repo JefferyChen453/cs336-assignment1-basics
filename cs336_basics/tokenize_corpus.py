@@ -9,38 +9,49 @@ from tqdm import tqdm
 from cs336_basics.tokenizer.tokenizer import Tokenizer
 from cs336_basics.utils.file import stream_chunks_with_split
 
-def process_chunk(args: Tuple):
-    tokenizer, chunk_bytes, output_folder, idx = args
-    try:
-        # decode bytes -> str
-        text = chunk_bytes.decode("utf-8", errors="ignore")
+# global tokenizer instance for each worker
+GLOBAL_TOKENIZER = None
 
-        # encode to token ids
-        ids = tokenizer.encode(text)
 
-        # serialize as uint16
-        id_array = np.array(ids, dtype=np.uint16)
+def init_tokenizer(vocab_path, merges_path, special_tokens):
+    """Executed once per worker process."""
+    global GLOBAL_TOKENIZER
+    GLOBAL_TOKENIZER = Tokenizer.from_files(
+        vocab_path,
+        merges_path,
+        special_tokens=special_tokens,
+    )
 
-        # write file
-        output_path = os.path.join(output_folder, f"{idx:05d}.bin")
-        id_array.tofile(output_path)
-    except Exception as e:
-        print(f"[Error] chunk {idx}: {e}")
-        raise
+
+def process_chunk(args):
+    global GLOBAL_TOKENIZER
+    chunk_data, output_folder, idx = args
+
+    text = chunk_data.decode("utf-8", errors="ignore")
+    ids = GLOBAL_TOKENIZER.encode(text)
+
+    arr = np.array(ids, dtype=np.uint16)
+    arr.tofile(os.path.join(output_folder, f"{idx:05d}.bin"))
+
 
 def tokenize_parallel(
-    tokenizer,
+    vocab_path,
+    merges_path,
+    special_tokens,
     input_path: str,
     output_folder: str,
     num_workers: int = 8,
 ):
     os.makedirs(output_folder, exist_ok=True)
+    block_size = 32 * 1024 * 1024  # 256MB chunk
 
-    # get total size for progress bar
-    block_size = 256 * 1024 * 1024
+    # create worker processes with tokenizer initialized inside
+    pool = Pool(
+        num_workers,
+        initializer=init_tokenizer,
+        initargs=(vocab_path, merges_path, special_tokens),
+    )
 
-    # pool for parallel encoding
-    pool = Pool(num_workers)
     futures = []
 
     for idx, chunk in enumerate(
@@ -50,17 +61,16 @@ def tokenize_parallel(
                 block_size=block_size,
                 reserve_split_token=True
             ),
-            desc="Tokenizing chunks..."
+            desc=f"Tokenizing {input_path} ..."
         )
     ):
         futures.append(
             pool.apply_async(
                 process_chunk,
-                args=((tokenizer, chunk, output_folder, idx),)
+                args=((chunk, output_folder, idx),)
             )
         )
 
-    # wait for finish
     for f in futures:
         f.get()
 
@@ -71,23 +81,54 @@ def tokenize_parallel(
 def main():
     num_processes = multiprocessing.cpu_count()
 
-    tinystories_tokenizer = Tokenizer.from_files(
-        "/data/tokenizer_TinyStories_10k/vocab.json",
-        "/data/tokenizer_TinyStories_10k/merges.txt",
-        special_tokens=["<|endoftext|>"],
-    )
-    tokenize_parallel(tinystories_tokenizer, "/data/TinyStoriesV2-GPT4-train.txt", "/data/data_bin/tinystories_train", num_processes)
-    tokenize_parallel(tinystories_tokenizer, "/data/TinyStoriesV2-GPT4-valid.txt", "/data/data_bin/tinystories_valid", num_processes)
+    # ---------------- TinyStories ----------------
+    tinystories_vocab = "/data/tokenizer_TinyStories_10k/vocab.json"
+    tinystories_merges = "/data/tokenizer_TinyStories_10k/merges.txt"
+    special = ["<|endoftext|>"]
 
-    owt_tokenizer = Tokenizer.from_files(
-        "/data/tokenizer_owt_32k_optim/vocab.json",
-        "/data/tokenizer_owt_32k_optim/merges.txt",
-        special_tokens=["<|endoftext|>"],
+    tokenize_parallel(
+        tinystories_vocab,
+        tinystories_merges,
+        special,
+        "/data/TinyStoriesV2-GPT4-train.txt",
+        "/data/data_bin/tinystories_train",
+        num_processes,
     )
 
-    tokenize_parallel(owt_tokenizer, "/data/owt_train.txt", "/data/data_bin/owt_train", num_processes)
-    tokenize_parallel(owt_tokenizer, "/data/owt_valid.txt", "/data/data_bin/owt_valid", num_processes)
+    tokenize_parallel(
+        tinystories_vocab,
+        tinystories_merges,
+        special,
+        "/data/TinyStoriesV2-GPT4-valid.txt",
+        "/data/data_bin/tinystories_valid",
+        num_processes,
+    )
+
+    # ---------------- OWT ----------------
+    owt_vocab = "/data/tokenizer_owt_32k_optim/vocab.json"
+    owt_merges = "/data/tokenizer_owt_32k_optim/merges.txt"
+
+    tokenize_parallel(
+        owt_vocab,
+        owt_merges,
+        special,
+        "/data/owt_train.txt",
+        "/data/data_bin/owt_train",
+        num_processes,
+    )
+
+    tokenize_parallel(
+        owt_vocab,
+        owt_merges,
+        special,
+        "/data/owt_valid.txt",
+        "/data/data_bin/owt_valid",
+        num_processes,
+    )
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    file_path = '/data/data_bin/owt_train/00350.bin'
+    arr = np.fromfile(file_path, dtype=np.uint16)
+    print(arr)

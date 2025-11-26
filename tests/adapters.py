@@ -12,7 +12,7 @@ from torch import Tensor
 from cs336_basics.tokenizer.bpe import BPETokenizer
 # from cs336_basics.tokenizer.bpe_optim import BPETokenizer
 from cs336_basics.tokenizer.tokenizer import Tokenizer
-from cs336_basics.transformer.nn import Linear, Embedding
+from cs336_basics.transformer.nn import *
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -61,8 +61,8 @@ def run_embedding(
     """
     weights = weights.to(DEVICE)
     emb_layer = Embedding(vocab_size, d_model, device=weights.device, dtype=weights.dtype)
-    state = {"weight": weights}
-    emb_layer.load_state_dict(state)
+    state_dict = {"weight": weights}
+    emb_layer.load_state_dict(state_dict)
 
     return emb_layer(token_ids.to(DEVICE))
 
@@ -89,15 +89,15 @@ def run_swiglu(
     Returns:
         Float[Tensor, "... d_model"]: Output embeddings of the same shape as the input embeddings.
     """
-    # Example:
-    # If your state dict keys match, you can use `load_state_dict()`
-    # swiglu.load_state_dict(weights)
-    # You can also manually assign the weights
-    # swiglu.w1.weight.data = w1_weight
-    # swiglu.w2.weight.data = w2_weight
-    # swiglu.w3.weight.data = w3_weight
-    raise NotImplementedError
+    swiglu_layer = PositionWiseFeedForward(d_model, d_ff, device=DEVICE)
+    state_dict = {
+        "W_1.weight": w1_weight,
+        "W_2.weight": w2_weight,
+        "W_3.weight": w3_weight
+    }
+    swiglu_layer.load_state_dict(state_dict)
 
+    return swiglu_layer(in_features.to(DEVICE))
 
 def run_scaled_dot_product_attention(
     Q: Float[Tensor, " ... queries d_k"],
@@ -213,7 +213,11 @@ def run_rope(
     Returns:
         Float[Tensor, " ... sequence_length d_k"]: Tensor with RoPEd input.
     """
-    raise NotImplementedError
+    in_query_or_key = in_query_or_key.to(DEVICE)
+    token_positions = token_positions.to(DEVICE)
+    rope = RotaryPositionalEmbedding(theta, d_k, max_seq_len, device=DEVICE)
+
+    return rope(in_query_or_key, token_positions)
 
 
 def run_transformer_block(
@@ -444,8 +448,7 @@ def run_softmax(in_features: Float[Tensor, " ..."], dim: int) -> Float[Tensor, "
         Float[Tensor, "..."]: Tensor of with the same shape as `in_features` with the output of
         softmax normalizing the specified `dim`.
     """
-    raise NotImplementedError
-
+    return softmax(in_features, dim)
 
 def run_cross_entropy(
     inputs: Float[Tensor, " batch_size vocab_size"], targets: Int[Tensor, " batch_size"]
