@@ -117,7 +117,7 @@ def run_scaled_dot_product_attention(
     Returns:
         Float[Tensor, " ... queries d_v"]: Output of SDPA
     """
-    raise NotImplementedError
+    return scaled_dot_product_attention(Q.to(DEVICE), K.to(DEVICE), V.to(DEVICE), mask.to(DEVICE))
 
 
 def run_multihead_self_attention(
@@ -151,8 +151,17 @@ def run_multihead_self_attention(
         Float[Tensor, " ... sequence_length d_out"]: Tensor with the output of running your optimized, batched multi-headed attention
         implementation with the given QKV projection weights and input features.
     """
-    raise NotImplementedError
+    attn_layer = CausalMultiHeadAttention(d_model, num_heads, device=DEVICE)
+    state_dict = {
+        "q_proj_weight.weight": q_proj_weight,
+        "k_proj_weight.weight": k_proj_weight,
+        "v_proj_weight.weight": v_proj_weight,
+        "o_proj_weight.weight": o_proj_weight
+    }
+    attn_layer.load_state_dict(state_dict)
+    ret = attn_layer(in_features)
 
+    return ret
 
 def run_multihead_self_attention_with_rope(
     d_model: int,
@@ -191,8 +200,17 @@ def run_multihead_self_attention_with_rope(
         Float[Tensor, " ... sequence_length d_out"]: Tensor with the output of running your optimized, batched multi-headed attention
         implementation with the given QKV projection weights and input features.
     """
-    raise NotImplementedError
+    attn_layer = CausalMultiHeadAttention(d_model, num_heads, max_seq_len, theta, DEVICE)
+    state_dict = {
+        "q_proj_weight.weight": q_proj_weight,
+        "k_proj_weight.weight": k_proj_weight,
+        "v_proj_weight.weight": v_proj_weight,
+        "o_proj_weight.weight": o_proj_weight
+    }
+    attn_layer.load_state_dict(state_dict)
+    ret = attn_layer(in_features, token_positions)
 
+    return ret
 
 def run_rope(
     d_k: int,

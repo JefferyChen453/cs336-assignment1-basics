@@ -4,6 +4,7 @@ from .rmsnorm import RMSNorm
 from .rope import RotaryPositionalEmbedding
 from .feedforward import PositionWiseFeedForward
 from .softmax import softmax
+from .attention import scaled_dot_product_attention, CausalMultiHeadAttention
 
 __all__ = [
     "Linear",
@@ -12,4 +13,6 @@ __all__ = [
     "RotaryPositionalEmbedding",
     "PositionWiseFeedForward",
     "softmax",
+    "scaled_dot_product_attention",
+    "CausalMultiHeadAttention"
 ]
