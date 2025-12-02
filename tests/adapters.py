@@ -12,7 +12,7 @@ from torch import Tensor
 from cs336_basics.tokenizer.bpe import BPETokenizer
 # from cs336_basics.tokenizer.bpe_optim import BPETokenizer
 from cs336_basics.tokenizer.tokenizer import Tokenizer
-from cs336_basics.transformer.nn import *
+from cs336_basics.transformer.model import *
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -395,7 +395,10 @@ def run_rmsnorm(
         Float[Tensor,"... d_model"]: Tensor of with the same shape as `in_features` with the output of running
         RMSNorm of the `in_features`.
     """
-    raise NotImplementedError
+    rmsnorm = RMSNorm(d_model, eps, DEVICE)
+    rmsnorm.load_state_dict({"weight": weights})
+
+    return rmsnorm(in_features.to(DEVICE))
 
 
 def run_silu(in_features: Float[Tensor, " ..."]) -> Float[Tensor, " ..."]:
@@ -409,7 +412,7 @@ def run_silu(in_features: Float[Tensor, " ..."]) -> Float[Tensor, " ..."]:
         Float[Tensor,"..."]: of with the same shape as `in_features` with the output of applying
         SiLU to each element.
     """
-    raise NotImplementedError
+    return PositionWiseFeedForward.SiLU(in_features)
 
 
 def run_get_batch(
