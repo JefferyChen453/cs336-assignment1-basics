@@ -59,6 +59,8 @@ class CausalMultiHeadAttention(nn.Module):
         s = x.shape[-2]
         causal_mask = torch.tril(torch.ones(s, s)).bool().to(self.device)
         if self.theta and self.max_seq_len:
+            if token_positions is None:
+                token_positions = torch.arange(s, dtype=torch.int).to(self.device)
             Q = self.rope(Q, token_positions)
             K = self.rope(K, token_positions)
 
