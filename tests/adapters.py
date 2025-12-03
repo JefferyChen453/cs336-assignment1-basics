@@ -13,6 +13,8 @@ from cs336_basics.tokenizer.bpe import BPETokenizer
 # from cs336_basics.tokenizer.bpe_optim import BPETokenizer
 from cs336_basics.tokenizer.tokenizer import Tokenizer
 from cs336_basics.transformer.model import *
+from cs336_basics.transformer.optimizer import *
+
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -40,6 +42,7 @@ def run_linear(
     linear_layer.load_state_dict(state)
 
     return linear_layer(in_features.to(DEVICE))
+
 
 def run_embedding(
     vocab_size: int,
@@ -98,6 +101,7 @@ def run_swiglu(
     swiglu_layer.load_state_dict(state_dict)
 
     return swiglu_layer(in_features.to(DEVICE))
+
 
 def run_scaled_dot_product_attention(
     Q: Float[Tensor, " ... queries d_k"],
@@ -163,6 +167,7 @@ def run_multihead_self_attention(
 
     return ret
 
+
 def run_multihead_self_attention_with_rope(
     d_model: int,
     num_heads: int,
@@ -211,6 +216,7 @@ def run_multihead_self_attention_with_rope(
     ret = attn_layer(in_features, token_positions)
 
     return ret
+
 
 def run_rope(
     d_k: int,
@@ -493,6 +499,7 @@ def run_softmax(in_features: Float[Tensor, " ..."], dim: int) -> Float[Tensor, "
     """
     return softmax(in_features, dim)
 
+
 def run_cross_entropy(
     inputs: Float[Tensor, " batch_size vocab_size"], targets: Int[Tensor, " batch_size"]
 ) -> Float[Tensor, ""]:
@@ -508,7 +515,7 @@ def run_cross_entropy(
     Returns:
         Float[Tensor, ""]: The average cross-entropy loss across examples.
     """
-    raise NotImplementedError
+    return cross_entropy(inputs, targets)
 
 
 def run_gradient_clipping(parameters: Iterable[torch.nn.Parameter], max_l2_norm: float) -> None:
@@ -520,14 +527,13 @@ def run_gradient_clipping(parameters: Iterable[torch.nn.Parameter], max_l2_norm:
 
     The gradients of the parameters (parameter.grad) should be modified in-place.
     """
-    raise NotImplementedError
-
+    gradient_clipping(parameters, max_l2_norm)
 
 def get_adamw_cls() -> Any:
     """
     Returns a torch.optim.Optimizer that implements AdamW.
     """
-    raise NotImplementedError
+    return AdamW
 
 
 def run_get_lr_cosine_schedule(
@@ -555,8 +561,7 @@ def run_get_lr_cosine_schedule(
     Returns:
         Learning rate at the given iteration under the specified schedule.
     """
-    raise NotImplementedError
-
+    return get_lr_cosine_schedule(it, max_learning_rate, min_learning_rate, warmup_iters, cosine_cycle_iters)
 
 def run_save_checkpoint(
     model: torch.nn.Module,
