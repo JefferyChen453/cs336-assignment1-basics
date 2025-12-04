@@ -3,7 +3,7 @@ from torch import Tensor, nn
 from cs336_basics.transformer.model import Linear, Embedding, RMSNorm, CausalMultiHeadAttention, PositionWiseFeedForward
 
 
-class transformer_block(nn.Module):
+class TransformerBlock(nn.Module):
     def __init__(self, d_model, num_heads, d_ff, max_seq_len=None, theta=None, device=None):
         super().__init__()
 
@@ -21,7 +21,7 @@ class transformer_block(nn.Module):
 
         return x
 
-class transformer_lm(nn.Module):
+class TransformerLM(nn.Module):
     def __init__(
         self,
         vocab_size: int,
@@ -37,7 +37,7 @@ class transformer_lm(nn.Module):
         self.device = device
 
         self.token_embeddings = Embedding(vocab_size, d_model, device)
-        self.layers = nn.ModuleList([transformer_block(d_model, num_heads, d_ff, context_length, theta, device) for _ in range(num_layers)])
+        self.layers = nn.ModuleList([TransformerBlock(d_model, num_heads, d_ff, context_length, theta, device) for _ in range(num_layers)])
         self.ln_final = RMSNorm(d_model, device=device)
         self.lm_head = Linear(d_model, vocab_size, device)
 

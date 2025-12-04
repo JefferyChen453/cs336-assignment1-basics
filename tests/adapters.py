@@ -316,7 +316,7 @@ def run_transformer_block(
         Float[Tensor, "batch sequence_length d_model"] Tensor with the output of
         running the Transformer block on the input features while using RoPE.
     """
-    block = transformer_block(d_model, num_heads, d_ff, max_seq_len, theta, DEVICE)
+    block = TransformerBlock(d_model, num_heads, d_ff, max_seq_len, theta, DEVICE)
     state_dict = {}
     for k, w in weights.items():
         k = k.replace("proj", "proj_weight")
@@ -409,7 +409,7 @@ def run_transformer_lm(
         Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
         next-word distribution for each token.
     """
-    llm = transformer_lm(vocab_size, context_length, num_layers, d_model, num_heads, d_ff, rope_theta, DEVICE)
+    llm = TransformerLM(vocab_size, context_length, num_layers, d_model, num_heads, d_ff, rope_theta, DEVICE)
     state_dict = {}
     for k, w in weights.items():
         k = k.replace("proj", "proj_weight")
