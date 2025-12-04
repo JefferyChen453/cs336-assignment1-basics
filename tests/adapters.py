@@ -14,6 +14,8 @@ from cs336_basics.tokenizer.bpe import BPETokenizer
 from cs336_basics.tokenizer.tokenizer import Tokenizer
 from cs336_basics.transformer.model import *
 from cs336_basics.transformer.optimizer import *
+from cs336_basics.transformer.train.data_loader import *
+from cs336_basics.transformer.train.checkpoint import *
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -481,7 +483,7 @@ def run_get_batch(
         is the sampled input sequences, and the second tuple item is the corresponding
         language modeling labels.
     """
-    raise NotImplementedError
+    return get_batch_data(dataset, batch_size, context_length, device)
 
 
 def run_softmax(in_features: Float[Tensor, " ..."], dim: int) -> Float[Tensor, " ..."]:
@@ -579,7 +581,7 @@ def run_save_checkpoint(
             we've completed.
         out (str | os.PathLike | BinaryIO | IO[bytes]): Path or file-like object to serialize the model, optimizer, and iteration to.
     """
-    raise NotImplementedError
+    save_checkpoint(model, optimizer, iteration, out)
 
 
 def run_load_checkpoint(
@@ -600,7 +602,7 @@ def run_load_checkpoint(
     Returns:
         int: the previously-serialized number of iterations.
     """
-    raise NotImplementedError
+    return load_checkpoint(src, model, optimizer)
 
 
 def get_tokenizer(

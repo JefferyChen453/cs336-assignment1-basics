@@ -110,3 +110,7 @@ def stream_chunks_with_split(
                 tail_buf = remain
 
             yield b"".join(cleaned)
+
+
+def read_nparray(file_path):
+    return np.memmap(out_path, dtype=np.uint16, mode="r")
