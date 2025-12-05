@@ -1,6 +1,7 @@
-import torch
-import typing
 import os
+import typing
+
+import torch
 
 
 def save_checkpoint(

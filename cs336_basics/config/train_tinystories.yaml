@@ -1,4 +1,5 @@
 data:
+  batch_size: 128
   train_file: /data/data_bin/tinystories_train.bin
   val_file: /data/data_bin/tinystories_valid.bin
 
@@ -6,25 +7,31 @@ tokenizer:
   path: /data/tokenizer_TinyStories_10k
 
 model:
+  vocab_size: 10000
   context_length: 256
   num_layers: 4
   d_model: 512
   num_heads: 16
   d_ff: 1344
-  rope_theta: 10000
+  theta: 10000 # rope_theta
 
 optim:
   lr: 1.0e-3
   min_lr: 1.0e-4
   warmup_ratio: 0.1
   weight_decay: 0.01
-  betas: (0.9, 0.95)
+  betas:
+    - 0.9
+    - 0.95
+  gradient_clipping: true
+  clip: 0.2
+
 
 trainer:
-  total_epochs: 1
-  max_steps: null
+  total_steps: 10000
   project_name: assignment1
   experiment_name: tinystories
+  val_freq: 50
   save_checkpoint_path: /data/checkpoint
   save_freq: 50
 

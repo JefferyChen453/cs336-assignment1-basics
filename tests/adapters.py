@@ -1,21 +1,19 @@
 from __future__ import annotations
-
-import os
 from collections.abc import Iterable
-from typing import IO, Any, BinaryIO
+import os
+from typing import Any, BinaryIO, IO
 
+from jaxtyping import Bool, Float, Int
 import numpy.typing as npt
 import torch
-from jaxtyping import Bool, Float, Int
 from torch import Tensor
 
 from cs336_basics.tokenizer.bpe import BPETokenizer
-# from cs336_basics.tokenizer.bpe_optim import BPETokenizer
 from cs336_basics.tokenizer.tokenizer import Tokenizer
 from cs336_basics.transformer.model import *
 from cs336_basics.transformer.optimizer import *
-from cs336_basics.transformer.train.data_loader import *
 from cs336_basics.transformer.train.checkpoint import *
+from cs336_basics.transformer.train.data_loader import *
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -13,7 +13,7 @@ def cross_entropy(
     max_logits = reduce(inputs, "... vocab_size -> ... 1", "max")
     stable_inputs = inputs - max_logits
     log_exp_sum = reduce(stable_inputs.exp(), "... vocab_size -> ... 1", "sum").log()
-    correct_logits = torch.gather(stable_inputs, dim=-1, index=rearrange(targets, "batch_size ... -> batch_size 1 ..."))
+    correct_logits = torch.gather(stable_inputs, dim=-1, index=rearrange(targets.long(), "batch_size ... -> batch_size 1 ..."))
     loss = - reduce((correct_logits - log_exp_sum), "... vocab_size -> ... 1", "sum")
 
     return loss.mean()

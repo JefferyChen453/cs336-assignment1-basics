@@ -5,7 +5,7 @@ from jaxtyping import Bool, Float, Int
 from torch import Tensor, nn
 import torch
 
-from cs336_basics.transformer.model import Linear, softmax, RotaryPositionalEmbedding
+from cs336_basics.transformer.model import Linear, RotaryPositionalEmbedding, softmax
 
 
 def scaled_dot_product_attention(

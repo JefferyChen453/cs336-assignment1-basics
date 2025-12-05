@@ -5,10 +5,10 @@ import torch
 
 
 class AdamW(torch.optim.Optimizer):
-    def __init__(self, params, lr=1e-3, betas=(0.9, 0.95), eps=1e-8, weight_decay=0.01):
+    def __init__(self, params, lr=1e-3, betas=(0.9, 0.95), eps=1e-8, weight_decay=0.01, **kwargs):
         defaults = {
             "lr": lr,
-            "betas": betas,
+            "betas": tuple(betas),
             "eps": eps,
             "weight_decay": weight_decay
         }
@@ -47,6 +47,7 @@ class AdamW(torch.optim.Optimizer):
                 p.data.add_(p.data, alpha=- lr * weight_decay)
 
                 state["t"] = t + 1
+                
         
         return loss
 

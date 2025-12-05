@@ -1,6 +1,12 @@
 from torch import Tensor, nn
 
-from cs336_basics.transformer.model import Linear, Embedding, RMSNorm, CausalMultiHeadAttention, PositionWiseFeedForward
+from cs336_basics.transformer.model import (
+    CausalMultiHeadAttention,
+    Embedding,
+    Linear,
+    PositionWiseFeedForward,
+    RMSNorm,
+)
 
 
 class TransformerBlock(nn.Module):
