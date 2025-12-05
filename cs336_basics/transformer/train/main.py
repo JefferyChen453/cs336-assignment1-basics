@@ -49,8 +49,6 @@ class Trainer():
         for it in tqdm(range(self.total_steps), desc="Training process", total=self.total_steps):
             self.optimizer.zero_grad()
             lr = get_lr_cosine_schedule(it, max_lr, min_lr, self.warmup_iters, self.total_steps)
-            for group in self.optimizer.param_groups:
-                group["lr"] = lr
             x, y = get_batch_data(self.train_dataset, self.batch_size, self.context_length, self.device)
             logits = self.model(x)
             loss = cross_entropy(logits, y, self.device)
@@ -58,6 +56,8 @@ class Trainer():
             print(f"{loss=}")
             if self.optim_conf["gradient_clipping"]:
                 gradient_clipping(self.model.parameters(), clip)
+            for group in self.optimizer.param_groups:
+                group["lr"] = lr
             self.optimizer.step()
 
 
