@@ -9,7 +9,7 @@ import wandb
 import yaml
 
 from cs336_basics.tokenizer.tokenizer import Tokenizer
-from cs336_basics.transformer.model import TransformerLM
+from cs336_basics.transformer.model import TransformerLM, generate
 from cs336_basics.transformer.optimizer import (
     AdamW,
     cross_entropy,

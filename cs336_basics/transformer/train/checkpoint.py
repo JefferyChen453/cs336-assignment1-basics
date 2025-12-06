@@ -16,7 +16,7 @@ def save_checkpoint(
         "optimizer": optimizer.state_dict(),
         "iteration": iteration,
     }
-    out = os.path.join(out, f"iter_{iteration:05d}")
+    out = os.path.join(out, f"iter_{iteration:05d}.bin")
     torch.save(checkpoint, out)
 
 def load_checkpoint(

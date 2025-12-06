@@ -6,6 +6,7 @@ from .feedforward import PositionWiseFeedForward
 from .softmax import softmax
 from .attention import scaled_dot_product_attention, CausalMultiHeadAttention
 from .transformer_lm import TransformerBlock, TransformerLM
+from .decoding import generate
 
 __all__ = [
     "Linear",
@@ -17,5 +18,6 @@ __all__ = [
     "scaled_dot_product_attention",
     "CausalMultiHeadAttention",
     "TransformerBlock",
-    "TransformerLM"
+    "TransformerLM",
+    "generate"
 ]
