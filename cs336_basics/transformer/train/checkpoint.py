@@ -10,11 +10,13 @@ def save_checkpoint(
     iteration: int,
     out: str | os.PathLike | typing.BinaryIO | typing.IO[bytes]
 ):
+    os.makedirs(out, exist_ok=True)
     checkpoint = {
         "model": model.state_dict(),
         "optimizer": optimizer.state_dict(),
         "iteration": iteration,
     }
+    out = os.path.join(out, f"iter_{iteration:05d}")
     torch.save(checkpoint, out)
 
 def load_checkpoint(
