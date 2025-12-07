@@ -192,8 +192,8 @@ class BPETokenizer:
 if __name__ == "__main__":
     tokenizer = BPETokenizer()
     tokenizer.train_bpe(
-        input_path="/data/owt_train.txt",
+        input_path="/workspace/cs336-assignment1-basics/data/owt_train.txt",
         vocab_size=32000,
         special_tokens=["<|endoftext|>"],
     )
-    tokenizer.save("/data/tokenizer_owt_32k_optim")
+    tokenizer.save("/workspace/cs336-assignment1-basics/data/tokenizer_owt_32k_optim")

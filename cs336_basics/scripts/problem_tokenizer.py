@@ -31,7 +31,7 @@ def sample_documents(input_path, sample_num = 10, block_size= 32 * 1024 * 1024):
 def train_bpe_tinystories():
     tokenizer = BPETokenizer()
     vocab, merges = tokenizer.train_bpe(
-        input_path="/data/TinyStoriesV2-GPT4-valid.txt",
+        input_path="/workspace/cs336-assignment1-basics/data/TinyStoriesV2-GPT4-valid.txt",
         vocab_size=10000,
         special_tokens=["<|endoftext|>"],
     )
@@ -43,7 +43,7 @@ def train_bpe_tinystories():
 def train_bpe_expts_owt():
     tokenizer = BPETokenizer()
     vocab, merges = tokenizer.train_bpe(
-        input_path="/data/owt_train.txt",
+        input_path="/workspace/cs336-assignment1-basics/data/owt_train.txt",
         vocab_size=32000,
         special_tokens=["<|endoftext|>"],
     )
@@ -52,16 +52,16 @@ def train_bpe_expts_owt():
 
 @print_func_name()
 def tokenizer_experiments():
-    sampled_tinystories = sample_documents("/data/TinyStoriesV2-GPT4-train.txt")
-    sampled_owt = sample_documents("/data/owt_train.txt")
+    sampled_tinystories = sample_documents("/workspace/cs336-assignment1-basics/data/TinyStoriesV2-GPT4-train.txt")
+    sampled_owt = sample_documents("/workspace/cs336-assignment1-basics/data/owt_train.txt")
     tinystories_tokenizer = Tokenizer.from_files(
-        vocab_filepath="/data/tokenizer_TinyStories_10k_optim/vocab.json",
-        merges_filepath="/data/tokenizer_TinyStories_10k_optim/merges.txt",
+        vocab_filepath="/workspace/cs336-assignment1-basics/data/tokenizer_TinyStories_10k_optim/vocab.json",
+        merges_filepath="/workspace/cs336-assignment1-basics/data/tokenizer_TinyStories_10k_optim/merges.txt",
         special_tokens=["<|endoftext|>"]
     )
     owt_tokenizer = Tokenizer.from_files(
-        vocab_filepath="/data/tokenizer_owt_32k_optim/vocab.json",
-        merges_filepath="/data/tokenizer_owt_32k_optim/merges.txt",
+        vocab_filepath="/workspace/cs336-assignment1-basics/data/tokenizer_owt_32k_optim/vocab.json",
+        merges_filepath="/workspace/cs336-assignment1-basics/data/tokenizer_owt_32k_optim/merges.txt",
         special_tokens=["<|endoftext|>"]
     )
 
@@ -80,7 +80,7 @@ def tokenizer_experiments():
     # Problem (c)
     print("-" * 50, "Problem (c)", "-" * 50)
     start_time = time.time()
-    text = sample_documents("/data/owt_train.txt", sample_num=1000, block_size=128 * 1024 * 1024)
+    text = sample_documents("/workspace/cs336-assignment1-basics/data/owt_train.txt", sample_num=1000, block_size=128 * 1024 * 1024)
     ids = owt_tokenizer.encode(text)
     end_time = time.time()
     throughput = len(text.encode("utf-8")) / (end_time - start_time)

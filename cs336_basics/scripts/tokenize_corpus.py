@@ -82,16 +82,16 @@ def main():
     num_processes = multiprocessing.cpu_count()
 
     # ---------------- TinyStories ----------------
-    tinystories_vocab = "/data/tokenizer_TinyStories_10k/vocab.json"
-    tinystories_merges = "/data/tokenizer_TinyStories_10k/merges.txt"
+    tinystories_vocab = "/workspace/cs336-assignment1-basics/data/tokenizer_TinyStories_10k/vocab.json"
+    tinystories_merges = "/workspace/cs336-assignment1-basics/data/tokenizer_TinyStories_10k/merges.txt"
     special = ["<|endoftext|>"]
 
     tokenize_parallel(
         tinystories_vocab,
         tinystories_merges,
         special,
-        "/data/TinyStoriesV2-GPT4-train.txt",
-        "/data/data_bin/tinystories_train",
+        "/workspace/cs336-assignment1-basics/data/TinyStoriesV2-GPT4-train.txt",
+        "/workspace/cs336-assignment1-basics/data/data_bin/tinystories_train",
         num_processes,
     )
 
@@ -99,21 +99,21 @@ def main():
         tinystories_vocab,
         tinystories_merges,
         special,
-        "/data/TinyStoriesV2-GPT4-valid.txt",
-        "/data/data_bin/tinystories_valid",
+        "/workspace/cs336-assignment1-basics/data/TinyStoriesV2-GPT4-valid.txt",
+        "/workspace/cs336-assignment1-basics/data/data_bin/tinystories_valid",
         num_processes,
     )
 
     # ---------------- OWT ----------------
-    owt_vocab = "/data/tokenizer_owt_32k_optim/vocab.json"
-    owt_merges = "/data/tokenizer_owt_32k_optim/merges.txt"
+    owt_vocab = "/workspace/cs336-assignment1-basics/data/tokenizer_owt_32k_optim/vocab.json"
+    owt_merges = "/workspace/cs336-assignment1-basics/data/tokenizer_owt_32k_optim/merges.txt"
 
     tokenize_parallel(
         owt_vocab,
         owt_merges,
         special,
-        "/data/owt_train.txt",
-        "/data/data_bin/owt_train",
+        "/workspace/cs336-assignment1-basics/data/owt_train.txt",
+        "/workspace/cs336-assignment1-basics/data/data_bin/owt_train",
         num_processes,
     )
 
@@ -121,14 +121,14 @@ def main():
         owt_vocab,
         owt_merges,
         special,
-        "/data/owt_valid.txt",
-        "/data/data_bin/owt_valid",
+        "/workspace/cs336-assignment1-basics/data/owt_valid.txt",
+        "/workspace/cs336-assignment1-basics/data/data_bin/owt_valid",
         num_processes,
     )
 
 
 if __name__ == "__main__":
     # main()
-    file_path = '/data/data_bin/owt_train/00350.bin'
+    file_path = '/workspace/cs336-assignment1-basics/data/data_bin/owt_train/00350.bin'
     arr = np.fromfile(file_path, dtype=np.uint16)
     print(arr)

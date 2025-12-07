@@ -5,7 +5,6 @@ import torch.nn.functional as F
 @torch.no_grad()
 def generate(
     model,
-    tokenizer,
     prompt_ids,
     max_new_tokens=100,
     temperature=1.0,
@@ -69,7 +68,7 @@ if __name__ == "__main__":
     prompt_ids = self.tokenizer.encode(s)
     prompt_ids = [prompt_ids]
 
-    # load_checkpoint("/data/checkpoint/assignment1/tinystories_20251206_0930/iter_05000", self.model, self.optimizer)
+    # load_checkpoint("/workspace/cs336-assignment1-basics/data/checkpoint/assignment1/tinystories_20251206_0930/iter_05000", self.model, self.optimizer)
     x = generate(
         self.model,
         self.tokenizer,

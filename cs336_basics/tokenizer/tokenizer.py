@@ -155,7 +155,7 @@ class Tokenizer:
 
 if __name__ == "__main__":
     text = "hello ! ！，4#. afdg<|endoftext|> rgeb! aretfasdf"
-    tokenizer = Tokenizer.from_files('/data/tokenizer_owt_32k_optim/vocab.json', '/data/tokenizer_owt_32k_optim/merges.txt', ["<|endoftext|>"])
+    tokenizer = Tokenizer.from_files('/workspace/cs336-assignment1-basics/data/tokenizer_owt_32k_optim/vocab.json', '/workspace/cs336-assignment1-basics/data/tokenizer_owt_32k_optim/merges.txt', ["<|endoftext|>"])
     encoded_text = tokenizer.encode(text)
     print(encoded_text)
     for token_id in encoded_text:

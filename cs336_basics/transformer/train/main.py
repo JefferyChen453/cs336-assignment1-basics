@@ -2,6 +2,7 @@ import argparse
 from datetime import datetime
 import logging
 import os
+import json
 
 import torch
 from tqdm import tqdm
@@ -27,10 +28,11 @@ logger = logging.getLogger(__name__)
 
 
 class Trainer():
-    def __init__(self, conf_path):
+    def __init__(self, config):
         TIME = datetime.now().strftime("%Y%m%d_%H%M")
 
-        self.load_config(conf_path)
+        self.load_config(config)
+        logger.info(json.dumps(config, indent=4, ensure_ascii=False))
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         self.train_dataset = read_nparray(self.data_conf["train_file"])
@@ -67,9 +69,7 @@ class Trainer():
             }
         )
 
-    def load_config(self, conf_path):
-        with open(conf_path, "r") as f:
-            config = yaml.safe_load(f)
+    def load_config(self, config):
         self.data_conf = config["data"]
         self.tokenizer_conf = config["tokenizer"]
         self.model_conf = config["model"]
@@ -103,9 +103,6 @@ class Trainer():
             if self.optim_conf["gradient_clipping"]:
                 grad_norm = gradient_clipping(self.model.parameters(), clip)
 
-            if self.optim_conf["gradient_clipping"]:
-                gradient_clipping(self.model.parameters(), clip)
-
             for group in self.optimizer.param_groups:
                 group["lr"] = lr
 
@@ -120,10 +117,10 @@ class Trainer():
                 log_dict["train/grad_norm"] = grad_norm
             wandb.log(log_dict, step=it)
 
-            if it > 0 and it % self.save_freq == 0:
-                save_checkpoint(self.model, self.optimizer, it, self.save_checkpoint_path)
+            if (it + 1) % self.save_freq == 0:
+                save_checkpoint(self.model, self.optimizer, it, self.save_checkpoint_path, self.trainer_conf["save_model_only"])
             
-            if it > 0 and it % self.val_freq == 0:
+            if (it + 1) % self.val_freq == 0:
                 self.evaluate(iter=it)
         
         # save the last checkpoint
@@ -146,15 +143,55 @@ class Trainer():
 
         self.model.train()
 
+def apply_overrides(config, overrides):
+    """
+    overrides: ["--data.train_batch_size", "16", "--optim.lr", "0.0005", ...]
+    """
+    def set_nested(cfg, key_path, value):
+        keys = key_path.split(".")
+        cur = cfg
+        for k in keys[:-1]:
+            if k not in cur:
+                cur[k] = {}
+            cur = cur[k]
+        cur[keys[-1]] = auto_cast(value)
+
+    i = 0
+    while i < len(overrides):
+        key = overrides[i]
+        if not key.startswith("--"):
+            i += 1
+            continue
+        key = key[2:]
+        value = overrides[i + 1]
+        set_nested(config, key, value)
+        i += 2
+    return config
+
+def auto_cast(value):
+    if value.isdigit():
+        return int(value)
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    if value.lower() in ["true", "false"]:
+        return value.lower() == "true"
+    return value
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, help="Config file path")
 
-    args = parser.parse_args()
-    conf_path = args.config
-    trainer = Trainer(conf_path)
-    trainer.train()
+    args, overrides = parser.parse_known_args()
 
+    with open(args.config, "r") as f:
+        config = yaml.safe_load(f)
+
+    config = apply_overrides(config, overrides)
+
+    trainer = Trainer(config)
+    trainer.train()
 
 if __name__ == "__main__":
     main()

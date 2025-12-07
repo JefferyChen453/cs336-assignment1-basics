@@ -1,0 +1,31 @@
+uv run -m cs336_basics.transformer.train.main \
+    --config cs336_basics/config/train_tinystories.yaml \
+    --optim.lr 1e-5 \
+    --optim.min_lr 1e-6 \
+    --trainer.total_steps 1000 \
+    --experiment_name tinystories_lr_1e-5\
+    --trainer.save_freq 2000 \
+
+uv run -m cs336_basics.transformer.train.main \
+    --config cs336_basics/config/train_tinystories.yaml \
+    --optim.lr 5e-5 \
+    --optim.min_lr 5e-6 \
+    --trainer.total_steps 1000 \
+    --experiment_name tinystories_lr_5e_5\
+    --trainer.save_freq 2000 \
+
+uv run -m cs336_basics.transformer.train.main \
+    --config cs336_basics/config/train_tinystories.yaml \
+    --optim.lr 1e-4 \
+    --optim.min_lr 1e-5 \
+    --trainer.total_steps 1000 \
+    --experiment_name tinystories_lr_1e_4\
+    --trainer.save_freq 2000 \
+
+uv run -m cs336_basics.transformer.train.main \
+    --config cs336_basics/config/train_tinystories.yaml \
+    --optim.lr 5e-4 \
+    --optim.min_lr 5e-5 \
+    --trainer.total_steps 1000 \
+    --experiment_name tinystories_lr_5e_4\
+    --trainer.save_freq 2000 \

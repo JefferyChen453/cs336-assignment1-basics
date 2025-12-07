@@ -8,14 +8,16 @@ def save_checkpoint(
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
     iteration: int,
-    out: str | os.PathLike | typing.BinaryIO | typing.IO[bytes]
+    out: str | os.PathLike | typing.BinaryIO | typing.IO[bytes],
+    save_model_only: bool = True
 ):
     os.makedirs(out, exist_ok=True)
     checkpoint = {
         "model": model.state_dict(),
-        "optimizer": optimizer.state_dict(),
         "iteration": iteration,
     }
+    if not save_model_only:
+        checkpoint["optimizer"] = optimizer.state_dict()
     out = os.path.join(out, f"iter_{iteration:05d}.bin")
     torch.save(checkpoint, out)
 
