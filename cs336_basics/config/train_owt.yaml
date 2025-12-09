@@ -1,6 +1,6 @@
 data:
   train_batch_size: 128
-  val_batch_size: 256
+  val_batch_size: 512
   train_file: /workspace/cs336-assignment1-basics/data/data_bin/owt_train.bin
   val_file: /workspace/cs336-assignment1-basics/data/data_bin/owt_valid.bin
 
@@ -17,8 +17,8 @@ model:
   theta: 10000 # rope_theta
 
 optim:
-  lr: 1.0e-3
-  min_lr: 1.0e-4
+  lr: 3.0e-4
+  min_lr: 3.0e-5
   warmup_ratio: 0.01
   weight_decay: 0.01
   betas:
@@ -30,7 +30,7 @@ optim:
 
 trainer:
   total_steps: 10000
-  project_name: assignment1
+  project_name: assignment1-owt
   experiment_name: openwebtext
   val_before_train: true
   val_freq: 50
