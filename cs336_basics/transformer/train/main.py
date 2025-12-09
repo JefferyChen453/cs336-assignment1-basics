@@ -88,7 +88,7 @@ class Trainer():
         if self.trainer_conf["val_before_train"]:
             self.evaluate(iter=0)
         
-        max_lr, min_lr, clip = self.optim_conf["lr"], self.optim_conf["min_lr"], self.optim_conf["clip"]
+        max_lr, min_lr, clip = self.optim_conf["lr"], self.optim_conf["lr"] * 0.01, self.optim_conf["clip"]
         for it in tqdm(range(self.total_steps), desc="Training process", total=self.total_steps):
             self.optimizer.zero_grad()
 
@@ -97,6 +97,13 @@ class Trainer():
             logits = self.model(x)
             loss = cross_entropy(logits, y, self.device)
             loss.backward()
+
+            if not torch.isfinite(loss):
+                logger.error(f"loss became {loss} at step {it} -> divergent")
+                break
+            if loss.item() > 1e6:
+                logger.error("loss exploded -> divergent")
+                break
 
             # Record grad_norm
             grad_norm = None
@@ -118,13 +125,13 @@ class Trainer():
             wandb.log(log_dict, step=it)
 
             if (it + 1) % self.save_freq == 0:
-                save_checkpoint(self.model, self.optimizer, it, self.save_checkpoint_path, self.trainer_conf["save_model_only"])
+                save_checkpoint(self.model, self.optimizer, it + 1, self.save_checkpoint_path, self.trainer_conf["save_model_only"])
             
             if (it + 1) % self.val_freq == 0:
                 self.evaluate(iter=it)
         
         # save the last checkpoint
-        save_checkpoint(self.model, self.optimizer, it, self.save_checkpoint_path)
+        save_checkpoint(self.model, self.optimizer, it + 1, self.save_checkpoint_path)
         
     
     def evaluate(self, iter):

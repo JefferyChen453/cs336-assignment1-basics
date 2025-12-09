@@ -17,8 +17,8 @@ model:
   theta: 10000 # rope_theta
 
 optim:
-  lr: 1.0e-3
-  min_lr: 1.0e-4
+  lr: 5.0e-4
+  min_lr: 5.0e-5
   warmup_ratio: 0.01
   weight_decay: 0.01
   betas:
@@ -30,7 +30,7 @@ optim:
 
 trainer:
   total_steps: 10000
-  project_name: assignment1
+  project_name: assignment1-hypersearch
   experiment_name: tinystories
   val_before_train: true
   val_freq: 50
