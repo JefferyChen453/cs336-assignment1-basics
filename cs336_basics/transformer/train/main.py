@@ -10,14 +10,14 @@ import wandb
 import yaml
 
 from cs336_basics.tokenizer.tokenizer import Tokenizer
-from cs336_basics.transformer.model import TransformerLM, generate
+from cs336_basics.transformer.model import TransformerLM
 from cs336_basics.transformer.optimizer import (
     AdamW,
     cross_entropy,
     get_lr_cosine_schedule,
     gradient_clipping,
 )
-from cs336_basics.transformer.train.checkpoint import load_checkpoint, save_checkpoint
+from cs336_basics.transformer.train.checkpoint import save_checkpoint
 from cs336_basics.transformer.train.data_loader import get_batch_data, read_nparray
 
 logging.basicConfig(
@@ -97,6 +97,8 @@ class Trainer():
             logits = self.model(x)
             loss = cross_entropy(logits, y, self.device)
             loss.backward()
+            del x, y, logits
+            torch.cuda.empty_cache()
 
             if not torch.isfinite(loss):
                 logger.error(f"loss became {loss} at step {it} -> divergent")
@@ -135,13 +137,17 @@ class Trainer():
         
     
     def evaluate(self, iter):
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
         self.model.eval()
         logger.info("Start evaluating...")
         with torch.no_grad():
             x, y = get_batch_data(self.train_dataset, self.val_batch_size, self.context_length, self.device)
             logits = self.model(x)
             loss = cross_entropy(logits, y, self.device)
-        ppl = torch.exp(loss)
+            ppl = torch.exp(loss)
+            del x, y
+            torch.cuda.empty_cache()
 
         wandb.log({
             "val/loss": loss.item(),

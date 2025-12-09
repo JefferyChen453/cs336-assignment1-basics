@@ -1,0 +1,12 @@
+tokenizer:
+  path: /workspace/cs336-assignment1-basics/data/tokenizer_owt_32k_optim
+
+model:
+  vocab_size: 32000
+  context_length: 256
+  num_layers: 4
+  d_model: 512
+  num_heads: 16
+  d_ff: 1344
+  theta: 10000 # rope_theta
+  load_checkpoint_path: /workspace/cs336-assignment1-basics/data/checkpoint/assignment1-owt/openwebtext_20251209_1143/iter_00500.bin

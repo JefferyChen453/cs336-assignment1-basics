@@ -37,7 +37,8 @@ class TransformerLM(nn.Module):
         num_heads: int,
         d_ff: int,
         theta: float | None = None,
-        device: str = None
+        device: str = None,
+        **kwargs
     ):
         super().__init__()
         self.device = device
