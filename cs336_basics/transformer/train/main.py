@@ -55,6 +55,8 @@ class Trainer():
             self.project_name,
             self.experiment_name,
         )
+        os.makedirs(self.save_checkpoint_path, exist_ok=True)
+
         self.save_freq = self.trainer_conf["save_freq"]
         self.val_freq = self.trainer_conf["val_freq"]
 
@@ -75,6 +77,7 @@ class Trainer():
         self.model_conf = config["model"]
         self.optim_conf = config["optim"]
         self.trainer_conf = config["trainer"]
+        self.debug_conf = config["debug"]
 
     def get_tokenizer(self):
         tokenizer_path = self.tokenizer_conf["path"]
@@ -89,16 +92,17 @@ class Trainer():
             self.evaluate(iter=0)
         
         max_lr, min_lr, clip = self.optim_conf["lr"], self.optim_conf["lr"] * 0.01, self.optim_conf["clip"]
-        for it in tqdm(range(self.total_steps), desc="Training process", total=self.total_steps):
+        log_data_sample_path = os.path.join(self.save_checkpoint_path, "log.txt")
+        for it in tqdm(range(self.total_steps), desc="Training process", total=self.total_steps, leave=False, dynamic_ncols=True):
             self.optimizer.zero_grad()
 
             lr = get_lr_cosine_schedule(it, max_lr, min_lr, self.warmup_iters, self.total_steps)
             x, y = get_batch_data(self.train_dataset, self.train_batch_size, self.context_length, self.device)
+            if self.debug_conf["debug_mode"] and self.debug_conf["log_data_sample"]:
+                self.log_data_sample(log_data_sample_path, it, x, y)
             logits = self.model(x)
             loss = cross_entropy(logits, y, self.device)
             loss.backward()
-            del x, y, logits
-            torch.cuda.empty_cache()
 
             if not torch.isfinite(loss):
                 logger.error(f"loss became {loss} at step {it} -> divergent")
@@ -134,11 +138,8 @@ class Trainer():
         
         # save the last checkpoint
         save_checkpoint(self.model, self.optimizer, it + 1, self.save_checkpoint_path)
-        
     
     def evaluate(self, iter):
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
         self.model.eval()
         logger.info("Start evaluating...")
         with torch.no_grad():
@@ -146,8 +147,6 @@ class Trainer():
             logits = self.model(x)
             loss = cross_entropy(logits, y, self.device)
             ppl = torch.exp(loss)
-            del x, y
-            torch.cuda.empty_cache()
 
         wandb.log({
             "val/loss": loss.item(),
@@ -155,6 +154,16 @@ class Trainer():
         }, step=iter)
 
         self.model.train()
+
+    def log_data_sample(self, log_path, it, x, y, sample_idx=100):
+        x_data = x[sample_idx].tolist() if hasattr(x, "tolist") else x[sample_idx]
+        y_data = y[sample_idx].tolist() if hasattr(y, "tolist") else y[sample_idx]
+        
+        x_text = self.tokenizer.decode(x_data)
+        y_text = self.tokenizer.decode(y_data)
+        
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(f"\n{'='*100}\nIteration: {it}\nX:\n{x_text}\nY:\n{y_text}\n{'='*100}\n")
 
 def apply_overrides(config, overrides):
     """
