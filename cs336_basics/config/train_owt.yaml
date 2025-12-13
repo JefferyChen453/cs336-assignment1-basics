@@ -1,5 +1,5 @@
 data:
-  train_batch_size: 64
+  train_batch_size: 128
   val_batch_size: 128
   train_file: /workspace/cs336-assignment1-basics/data/data_bin/owt_train.bin
   val_file: /workspace/cs336-assignment1-basics/data/data_bin/owt_valid.bin
@@ -19,7 +19,7 @@ model:
 optim:
   lr: 3.0e-4
   min_lr: 3.0e-5
-  warmup_ratio: 0.01
+  warmup_ratio: 0.1
   weight_decay: 0.01
   betas:
     - 0.9
@@ -29,12 +29,15 @@ optim:
 
 
 trainer:
-  total_steps: 20000
-  project_name: assignment1-owt
-  experiment_name: openwebtext
+  total_steps: 10000
+  project_name: owt-train
+  experiment_name: final
   val_before_train: true
-  val_freq: 500
+  val_freq: 50
   save_checkpoint_path: /workspace/cs336-assignment1-basics/data/checkpoint
-  save_freq: 500
+  save_freq: 5000
   save_model_only: true
 
+debug:
+  debug_mode: false
+  log_data_sample: true

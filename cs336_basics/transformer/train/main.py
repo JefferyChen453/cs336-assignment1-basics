@@ -141,7 +141,6 @@ class Trainer():
     
     def evaluate(self, iter):
         self.model.eval()
-        logger.info("Start evaluating...")
         with torch.no_grad():
             x, y = get_batch_data(self.train_dataset, self.val_batch_size, self.context_length, self.device)
             logits = self.model(x)
@@ -162,7 +161,7 @@ class Trainer():
         x_text = self.tokenizer.decode(x_data)
         y_text = self.tokenizer.decode(y_data)
         
-        with log_path.open("a", encoding="utf-8") as f:
+        with open(log_path, "a", encoding="utf-8") as f:
             f.write(f"\n{'='*100}\nIteration: {it}\nX:\n{x_text}\nY:\n{y_text}\n{'='*100}\n")
 
 def apply_overrides(config, overrides):

@@ -5,10 +5,12 @@ import torch.nn.functional as F
 @torch.no_grad()
 def generate(
     model,
+    tokenizer,
     prompt_ids,
     max_new_tokens=100,
     temperature=1.0,
     top_p=0.5,
+    eos_token="<|endoftext|>",
     device="cuda"
 ):
     model.eval()
@@ -37,7 +39,7 @@ def generate(
         x = torch.cat([x, next_token], dim=1)
 
         # stop if hit <|endoftext|>
-        if next_token_id == "<|endoftext|>":
+        if tokenizer.decode([next_token_id]) == eos_token:
             break
 
     return x[0].tolist()

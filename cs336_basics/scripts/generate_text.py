@@ -22,6 +22,7 @@ class TextGenerator():
     def load_config(self, config):
         self.tokenizer_conf = config["tokenizer"]
         self.model_conf = config["model"]
+        self.generation_conf = config["generation"]
 
     def get_tokenizer(self):
         tokenizer_path = self.tokenizer_conf["path"]
@@ -36,7 +37,13 @@ class TextGenerator():
         prompt_ids = [prompt_ids]
         generate_ids = generate(
             self.model,
+            self.tokenizer,
             prompt_ids,
+            max_new_tokens=self.generation_conf["max_new_tokens"],
+            temperature=self.generation_conf["temperature"],
+            top_p=self.generation_conf["top_p"],
+            eos_token=self.generation_conf["eos_token"],
+            device=self.device
         )
         generate_text = self.tokenizer.decode(generate_ids)
         print(generate_text)

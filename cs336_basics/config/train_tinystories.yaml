@@ -1,8 +1,8 @@
 data:
   train_batch_size: 128
-  val_batch_size: 256
-  train_file: /data/tinystories_train.bin
-  val_file: /data/tinystories_valid.bin
+  val_batch_size: 512
+  train_file: /workspace/cs336-assignment1-basics/data/data_bin/tinystories_train.bin
+  val_file: /workspace/cs336-assignment1-basics/data/data_bin/tinystories_valid.bin
 
 tokenizer:
   path: /workspace/cs336-assignment1-basics/data/tokenizer_TinyStories_10k
@@ -10,27 +10,27 @@ tokenizer:
 model:
   vocab_size: 10000
   context_length: 256
-  num_layers: 2
+  num_layers: 4
   d_model: 512
   num_heads: 16
   d_ff: 1344
   theta: 10000 # rope_theta
 
 optim:
-  lr: 5.0e-4
-  min_lr: 5.0e-5
+  lr: 3.0e-4
+  min_lr: 3.0e-5
   warmup_ratio: 0.1
   weight_decay: 0.01
   betas:
     - 0.9
-    - 0.95
+    - 0.999
   gradient_clipping: true
   clip: 1.0
 
 
 trainer:
   total_steps: 10000
-  project_name: assignment1-test
+  project_name: assignment1-bs_tune
   experiment_name: tinystories
   val_before_train: true
   val_freq: 50
@@ -39,5 +39,5 @@ trainer:
   save_model_only: true
 
 debug:
-  debug_mode: true
+  debug_mode: false
   log_data_sample: true
