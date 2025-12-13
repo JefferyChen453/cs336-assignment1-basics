@@ -9,10 +9,10 @@ model:
   num_heads: 16
   d_ff: 1344
   theta: 10000 # rope_theta
-  load_checkpoint_path: "/workspace/cs336-assignment1-basics/data/checkpoint/assignment1-lr_tnue/lr_coarse_1e-2_20251212_1423/iter_05000.bin"
+  load_checkpoint_path: /workspace/cs336-assignment1-basics/data/checkpoint/tinystories-train/final_20251213_0846/iter_10000.bin
 
 generation:
-  max_new_tokens: 200
+  max_new_tokens: 1000
   temperature: 1.0
   top_p: 0.5
   eos_token: "<|endoftext|>"

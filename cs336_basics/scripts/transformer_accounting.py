@@ -24,12 +24,14 @@ def count_parameters(model_conf):
     lm_head_param_count = d_model + d_model * vocab_size
 
     # Total
-    total_param_count = emb_param_count + num_layers * (attn_param_count + ff_param_count) + lm_head_param_count
+    total_param_count = emb_param_count + attn_param_count + ff_param_count + lm_head_param_count
 
-    print(f"Total params: {total_param_count}")
-    print(f"Embedding Params: {emb_param_count} ({emb_param_count / total_param_count:.2% })")
-    print(f"Attention Params: {attn_param_count} ({attn_param_count / total_param_count:.2% })")
-    print(f"Attention Params: {attn_param_count} ({attn_param_count / total_param_count:.2% })")
+    print(f"{'Total params:':<20} {total_param_count:<10} {total_param_count/10**9:.2f}B")
+    print('-'*50)
+    print(f"{'Embedding Params:':<20} {emb_param_count:<10} ({emb_param_count / total_param_count:.2%})")
+    print(f"{'Attention Params:':<20} {attn_param_count:<10} ({attn_param_count / total_param_count:.2%})")
+    print(f"{'FFN Params:':<20} {ff_param_count:<10} ({ff_param_count / total_param_count:.2%})")
+    print(f"{'LMHead Params:':<20} {lm_head_param_count:<10} ({lm_head_param_count / total_param_count:.2%})")
 
     return total_param_count
 
